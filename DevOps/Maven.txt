@@ -1,0 +1,56 @@
+## maven ##
+
+- java path : /usr/lib/jvm/java-11-amazon-corretto.x86_64
+- whereis java
+- cd /usr/lib/java
+- vi ~/.bash_profile
+- echo $PATH
+- source  ~/.bash_profile
+- echo $PATH
+  
+  
+  > validate
+  > compile - java files into class
+  > test-compile - test files
+  > test - test src code
+  > package - packages into har/war
+  > install - install the package into local repo ( com filder in m2 is important)
+  > deploy
+  
+  
+  > clean
+  
+  >> https://maven.apache.org/archetypes/maven-archetype-webapp/
+  
+  > architype
+  
+settings.xml - we can create in m2 folder
+
+
+mvn cycle phases - default, clean, site(proj documentation)
+
+multimodule project - maven we need to define parent tag and module in POM.XML
+
+
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+ 
