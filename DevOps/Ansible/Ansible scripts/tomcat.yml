@@ -1,0 +1,26 @@
+- hosts: all
+  remote_user: ec2-user
+  become: yes
+  tasks: 
+    - name: upgrade all packages
+      yum:
+        name: '*'
+        state: latest
+    - name: install the latest version of Apache
+      yum:
+        name: java-1.7.0-openjdk
+        state: present
+    - name: tomcatdownload
+      get_url:
+        url:  https://mirrors.estointernet.in/apache/tomcat/tomcat-10/v10.0.8/bin/apache-tomcat-10.0.8.zip
+        dest: /usr/local
+        mode: '0700'
+    - name: Unarchive a file that is already on the remote machine
+      unarchive:
+        src: /usr/local/apache-tomcat-10.0.8.zip
+        dest: /usr/local
+        remote_src: yes
+        mode: '0700'
+    
+
+       

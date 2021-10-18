@@ -1,0 +1,28 @@
+---
+- name: Setting up Apache webserver
+  hosts: workers
+  become: true
+  tasks:
+  - name: Install apache packages
+    yum:
+      name: httpd
+      state: present
+
+  - name: copy index.html to web root
+    copy: src=index.html dest=/var/www/html/index.html owner=apache group=apache mode=0644
+
+  - name: ensure httpd service is running
+    service:
+      name: httpd
+      state: started
+
+  - name: Open port 80 for http access
+    firewalld:
+      service: http
+      permanent: true
+      state: enabled
+
+  - name: Restart the firewalld service to load in the firewall changes
+    service:
+      name: firewalld
+      state: restarted

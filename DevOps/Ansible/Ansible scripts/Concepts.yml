@@ -1,0 +1,503 @@
+---
+- name: variable
+  hosts: ungrouped
+  vars:
+    user: sai 
+  tasks:
+    - name: create user {{ user }}
+      user:
+        name: "{{ user }}"
+
+---
+- name: group var
+  hosts: lamp
+  tasks:
+    - name: this is the {{web_package}}
+      debug:
+        msg: "installing {{web_package}}"
+    - name: this is the {{web_service}}
+      debug:
+        msg: "installing {{web_service}}"
+
+
+
+users:
+  - username: linda
+    homedir: /home/linda
+    shell: /bin/bash
+  - username: mahesh
+    homedir: /home/mahesh
+    shell: /bin/bash
+  - username: lilly
+    homedir: /home/lilly
+    shell: /bin/sh
+
+---
+- name: multivalues
+  hosts: lamp
+  vars_files:
+    - vars/userlist
+  tasks:
+    - name: print the values
+      debug:
+        msg: "user {{ item.username }} has homedir {{ item.homedir }} with shell as {{ item.shell }}"
+      loop: "{{users}}"
+    - name: print the arry value
+      debug:
+        msg: the second item is {{users[1]}} and one more thing is {{users[1].username}}
+
+---
+
+- name: vault files
+  hosts: lamp
+  vars_files:
+    - vars/pwd
+  tasks:
+    - name: pasword
+      debug:
+        msg: username {{ username }} and password {{ password }}
+
+
+
+---
+
+- name: facts through play
+  hosts: lamp
+  gather_facts: False  # it will not gather any facts and play run is fast
+  tasks:
+    - name: ansible facts
+      debug:
+        var: ansible_facts
+
+
+## loop
+
+---
+
+- name: users with loop
+  hosts: lamp
+  tasks:
+    - name: create users
+      user:
+        name: "{{ item.name }}"
+        state: present
+        groups: "{{ item.groups }}"
+      loop:
+        - name: ravi
+          groups: wheel
+        - name: akhil
+          groups: thunders
+
+## register
+
+---
+
+- name: use of register
+  hosts: lamp
+  tasks:
+    - name: shell var
+      shell: "echo {{ item }}"
+      loop:
+       - 'one'
+       - 'two'
+      register: arjun
+    - name: debug module here
+      debug:
+        var: echo 
+
+
+
+---
+
+- name: register inside var
+  hosts: lamp
+  tasks:
+   - name: shell command
+     shell: cat /etc/passwd
+     register: usr_passwd
+   - name: debug
+     debug:
+       msg: echo 'paswd contains user'
+     when: usr_passwd.stdout.find('ravi') != -1
+
+## when condition
+
+---
+- name: when condition
+  hosts: lamp
+  vars:
+    supported_distro:
+      - Redhat
+      - Centos
+      - Amazon
+  tasks:
+    - name: check when condition
+      yum:
+        name: ngnix
+        state: present
+      when: ansible_distribution in supported_distro 
+
+
+## using multiple condition
+
+---
+
+- name: multiple conditions
+  hosts: lamp # hosts: localhost
+  tasks:
+    - name: installation packages
+      package: 
+        name: httpd
+        state: installed
+      when:
+        - ansible_distribution == 'Amazon'
+        - ansible_memfree_mb > 1512
+      
+
+- name: multiple when
+  hosts: all
+  tasks:
+    - name: installation
+      package:
+        name: httpd
+        state: removed
+      when: >
+        (ansible_distribution == 'Redhat' and
+         ansible_memfree_mb > 512)
+        or
+        (ansible_distribution == 'Ubuntu' and
+         ansible_memfree_mb > 512
+        )
+
+# handlers
+
+---
+
+- name: handlers
+  hosts: lamp
+  force_handlers: true
+  tasks:
+    - name: install httpd
+      yum:
+        name: httpd
+        state: latest
+    - name: copy index
+      copy:
+        src: /tmp/index.html
+        dest: /var/www/html/index.html
+      notify:
+        - restart_web
+    - name: nothing
+      copy:
+        src: /tmp/nothing.html
+        dest: /var/www/html/nothing.html
+  handlers:
+    - name: restart_web
+      service:
+        name: httpd
+        state: started
+
+
+## block
+
+---
+
+- name: blocks
+  hosts: all
+  tasks:
+    - name: blocked here
+      block:
+      - name: first tasks
+        yum: 
+          name: httpd
+          state: latest
+      - name: second task
+        service:
+          name: httpd
+          state: started # state: stopped, state: restarted, 
+          enabled: yes
+      when: ansible_distribution == 'Redhat'
+
+
+---
+
+- name: error handling block
+  hosts: all
+  tasks:
+    - name: Error handling
+      block:
+        - name: remove file
+          shell:
+            cmd: /usr/bin/rm /var/www/html/index.html
+      rescue:
+        - name: add file
+          shell:
+            cmd: /usr/bin/touch /tmp/rescuefile
+      always:
+        - name: will execute always
+          shell:
+            cmd: /usr/bin/logger hello
+
+## failed_when
+
+---
+
+- name: failed when
+  hosts: lamp
+  tasks:
+    - name: run a script
+      command: echo helloworld
+      ignore_errors: yes
+      register: command_res
+      failed_when: "'world' in command_res.stdout"
+    - name: see if we get here
+      debug:
+        msg: hello
+
+
+- name: print nice error message
+  fail:
+    msg: volume doesn't found
+  when: <condition>
+
+## file
+
+---
+- name: file module
+  hosts: lamp
+  tasks:
+    - name: create a file
+      file:
+        path: /tmp/removeme
+        owner: root
+        mode: 0640
+        state: touch
+
+---
+- name: file copy module       ## erorrrrrrrrrrrrr
+  hosts: lamp
+  tasks:
+    - name: copy file 
+      copy:
+        src: /etc/hosts
+        dest: /tmp/
+    - name: add some lines to host file
+      blockinfle:
+        path: /tmp/hosts
+        block: |
+          some text added here
+          check these are lines from blockinfile module
+        state: present
+    - name: verify file check sum
+      stat:
+        path: /tmp/hosts
+        checksum_algorithm: md5
+      register: checksumresult
+    - name: outputing the result to dubug
+      debug:
+        msg: "the output of the file is{{checksumresult.stat.checksum}}"
+    - name: fetch a file
+      fetch:
+        src: /tmp/hosts
+        dest: /tmp
+
+---
+
+- name: blockinfile
+  hosts: lamp
+  tasks:
+    - name: Insert/Update "Match User" configuration block in /etc/ssh/sshd_config
+      blockinfile:
+        path: /etc/hosts
+        block: |
+          Match User ansible-agent
+          PasswordAuthentication no
+
+- name: blockinfile
+  hosts: lamp
+  tasks:
+    - name: fetch
+      fetch:
+        src: /etc/hosts
+        dest: /tmp
+          
+
+## jinja2 template
+
+---
+
+- name: configure VSFTPD using template
+  hosts: lamp
+  vars:
+    anonymous_enable: yes
+    local_enable: yes
+  tasks:
+    - name: VSFTPD
+      yum:
+        name: vsftpd
+        state: latest
+    - name: use jinja template
+      template:
+        src: vsftpd.j2
+        dest: /etc/vsftpd/vsftpd.conf
+
+
+##jinja 2 - control statements
+---
+- name: update file dynamically
+  hosts: lamp
+  tasks:
+    - name: update /tmp/removeme
+      template:
+        src: hosts.j2
+        dest: /tmp/removeme
+
+
+## roles
+
+---
+- name: use of roles
+  hosts: lamp
+  roles:
+    - role: robertdebock.httpd
+
+## multiple from ansible-galaxy
+
+- src: geerlingguy.docker
+- src: geerlingguy.nginx
+  version: 3.1.0
+  name: nginx
+
+
+## run a task before role
+
+---
+- name: run a task before role
+  hosts: lamp
+  pre_tasks:
+    - name: pre tasks
+      yum:
+        update_cache: yes
+  roles:
+    - role: motd
+
+## import tasks from yaml
+
+---
+- name: install apache
+  hosts: all
+  tasks:
+    - name: setup
+      import_tasks: install.yml
+
+## packages
+---
+- name: list packages
+  hosts: all
+  tasks:
+    - name: get info about packages
+      package_facts:
+        manager: auto
+    - name: list packages
+      debug:
+        var: ansible_facts.packages
+    - name: show bash version
+      debug:
+        msg: "{{ansible_facts.packages['bash'][0].version}}"
+      when: "'bash' in ansible_facts.packages"
+
+## stat 
+
+- name: list packages
+  hosts: all
+  tasks:
+    - name: stat a dir
+      stat:
+        path: /etc
+      register: dist_var
+    - name: check dir
+      assert:
+        that: dist_var.stat.isdir
+
+
+## Playbook for httpd and php config
+---
+- name: installations
+  hosts: stapp02
+  become: yes
+  tasks:
+    - name: install packages
+      yum:
+        name:
+          - httpd
+          - php
+        state: latest
+    - name: replace default document
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: DocumentRoot \"\/var\/www\/html\"
+        replace: DocumentRoot "/var/www/html/myroot"
+    - name: create new dir if not exists
+      file:
+        path: /var/www/html/myroot
+        state: directory
+        group: apache 
+        owner: apache
+    - name: jinja template
+      template:
+        src: /home/thor/playbooks/templates/phpinfo.php.j2
+        dest: /var/www/html/myroot/phpinfo.php
+        owner: apache
+        group: apache
+    - name: start and enable http
+      service:
+        name: httpd
+        state: started
+        enable: yes
+
+# playbook for replace module
+
+
+---
+- name: replace module
+  hosts: stapp01,stapp02,stapp03
+  become: yes
+  tasks:
+    - name: replace in stapp01
+      replace:
+        path: /opt/itadmin/blog.txt
+        regexp: "xFusionCorp"
+        replace: "Nautilus"
+      when:
+        - inventory_hostname == "stapp01"
+    - name: replace in stapp02
+      replace:
+        path: /opt/itadmin/story.txt
+        regexp: "Nautilus"
+        replace: "KodeKloud"
+      when:
+        - inventory_hostname == "stapp02"
+    - name: replace in stapp03
+      replace:
+        path: /opt/itadmin/media.txt
+        regexp: "KodeKloud"
+        replace: "xFusionCorp Industries"
+      when:
+        - inventory_hostname == "stapp03"
+        
+# In the below example, if we had 6 hosts in the group ‘webservers’, 
+# Ansible would execute the play completely (both tasks) on 3 of the hosts 
+# before moving on to the next 3 hosts:
+
+---
+- name: test play
+  hosts: webservers
+  serial: 3 #   serial: "30%"
+  gather_facts: False
+
+  tasks:
+    - name: first task
+      command: hostname
+    - name: second task
+      command: hostname
+

@@ -1,0 +1,19 @@
+- name: Apache
+  hosts: all
+  remote_user: ec2-user
+  become: yes
+  tasks:
+    - name: install the latest version of Apache
+      yum:
+        name: httpd
+        state: latest
+    - name: Start service httpd
+      service:
+        name: httpd
+        state: started
+    - name: Copy code to Apache
+      copy:
+        src: ./index.html
+        dest: /var/www/html
+        mode: '644'
+        
