@@ -1,3 +1,3 @@
 # Linux
 
-for fetch some of the lines added
+for fetch some of the lines added some
