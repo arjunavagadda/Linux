@@ -201,6 +201,21 @@ git fetch - when ever person does the changes of the same file u r working u can
 
 git clone --single-branch -b brnachname link
 
+============================================================================
+
+git remote prune origin -- deleted branches on the remote are in sync with local copy
+
+git fetch - only shows logs and commits (git log remote/main)
+
+
+
+
+
+
+
+
+
+
 
 
 

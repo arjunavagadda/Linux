@@ -890,3 +890,23 @@ ln -s main symb1
 >> both dir and files symbolic links can be created
 
 - symbolic links --- l
+
+
+pwd
+whoami
+sudo su -
+env
+alias
+CTRL + R --> reverse search
+>
+>>
+1> -- dentotes standard op
+2> -- denotes standard error
+
+/dev/null --- trash
+
+stdin cmd stdout
+
+stderr
+
+grep -R linuxteam /etc 2> /dev/null ( redirecting the error messages to trash)
